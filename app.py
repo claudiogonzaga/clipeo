@@ -113,10 +113,9 @@ class Api:
         chave do Gemini. Limita a `max_total` vídeos novos por clique."""
         if self._refreshing:
             return {"ok": False, "error": "Atualização já em andamento."}
+        import accounts  # usado também no except ReauthRequired abaixo
         # pré-checagens amigáveis
         try:
-            import accounts
-
             if not accounts.status().get("active"):
                 return {"ok": False, "error": "Conecte um canal do YouTube primeiro."}
         except Exception:
@@ -133,6 +132,9 @@ class Api:
 
             summary = routine.run(self.cfg, max_total=max_total)
             return {"ok": True, **summary}
+        except accounts.ReauthRequired as e:
+            # sessão do canal morreu → a UI mostra um BOTÃO de reconexão
+            return {"ok": False, "error": str(e), "reauth": True}
         except Exception as e:  # noqa: BLE001
             return {"ok": False, "error": str(e)}
         finally:

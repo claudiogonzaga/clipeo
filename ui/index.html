@@ -219,8 +219,18 @@
     background: var(--fg); color: var(--bg); padding: 8px 16px; border-radius: 9px;
     font-size: 12.5px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 80;
     max-width: 80%; text-align: center;
+    display: flex; align-items: center; gap: 12px; justify-content: center;
   }
   .toast.show { opacity: 0.96; }
+  .toast.has-action { pointer-events: auto; }
+  .toast-msg { text-align: left; }
+  .toast-action {
+    flex-shrink: 0; font-family: var(--sans); font-size: 12.5px; font-weight: 600;
+    background: var(--bg); color: var(--fg); border: none; border-radius: 7px;
+    padding: 5px 12px; cursor: pointer; white-space: nowrap;
+  }
+  .toast-action:hover { opacity: 0.85; }
+  .toast-action:disabled { opacity: 0.6; cursor: default; }
   .acct-btn {
     font-family: var(--sans); font-size: 12.5px; color: var(--fg-secondary);
     background: transparent; border: 0.5px solid var(--btn-border); border-radius: 999px;
@@ -970,9 +980,50 @@
   let _toastTimer = null;
   function flash(msg, ms = 4000) {
     const t = document.getElementById("toast");
+    t.classList.remove("has-action");
     t.textContent = msg; t.classList.add("show");
     if (_toastTimer) clearTimeout(_toastTimer);
     _toastTimer = setTimeout(() => t.classList.remove("show"), ms);
+  }
+
+  // Toast com um botão de ação (ex.: "Reconectar"). Fica visível até o usuário
+  // clicar ou passar `ms` (default longo, pois exige ação do usuário).
+  function flashAction(msg, label, fn, ms = 30000) {
+    const t = document.getElementById("toast");
+    t.innerHTML = "";
+    const span = document.createElement("span");
+    span.className = "toast-msg"; span.textContent = msg;
+    const btn = document.createElement("button");
+    btn.className = "toast-action"; btn.textContent = label;
+    btn.onclick = async () => {
+      btn.disabled = true;
+      try { await fn(); } finally { t.classList.remove("show", "has-action"); }
+    };
+    t.appendChild(span); t.appendChild(btn);
+    t.classList.add("show", "has-action");
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove("show", "has-action"), ms);
+  }
+
+  // Reconecta o canal ativo: abre direto o login do Google (yt_connect já abre
+  // o navegador na página de autenticação) e recarrega a lista ao concluir.
+  async function reconnectActive() {
+    const a = api();
+    if (!a) return;
+    flash("Abrindo o navegador para você entrar de novo na sua conta do Google…", 60000);
+    try {
+      const r = await a.yt_connect();
+      if (r && r.ok) {
+        await refreshYtStatus();
+        flash("Conta reconectada. Atualizando…");
+        await doRefresh();
+      } else {
+        flashAction((r && r.error) || "Não foi possível reconectar.",
+                    "Tentar de novo", reconnectActive);
+      }
+    } catch (e) {
+      flashAction(String(e), "Tentar de novo", reconnectActive);
+    }
   }
 
   let refreshing = false;
@@ -990,6 +1041,9 @@
         await load();
         flash(`Pronto · ${r.processed || 0} processado(s), ${r.above || 0} acima do limiar` +
               (r.errors ? ` · ${r.errors} com erro` : ""));
+      } else if (r && r.reauth) {
+        // sessão do canal expirou → botão que abre direto o login do Google
+        flashAction(r.error || "Sua sessão do YouTube expirou.", "Reconectar", reconnectActive);
       } else {
         flash((r && r.error) || "Não foi possível atualizar.");
       }

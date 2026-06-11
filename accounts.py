@@ -25,6 +25,14 @@ import config
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
 
+
+class ReauthRequired(RuntimeError):
+    """A sessão OAuth do canal ativo morreu (invalid_grant, sem refresh token,
+    ou token sumiu). Sinaliza à UI para oferecer um BOTÃO de reconexão (que abre
+    direto o login do Google) em vez de só mostrar texto de erro."""
+    pass
+
+
 OAUTH_CLIENT = os.path.join(config.USER_DIR, "oauth_client.json")
 ACCOUNTS_DIR = os.path.join(config.USER_DIR, "accounts")
 INDEX_PATH = os.path.join(ACCOUNTS_DIR, "index.json")
@@ -265,13 +273,14 @@ def creds_for_active():
     idx = _load_index()
     active = idx.get("active")
     if not active:
-        raise RuntimeError("Nenhum canal do YouTube conectado. Conecte um canal no app.")
+        raise ReauthRequired("Nenhum canal do YouTube conectado. Conecte um canal no app.")
     entry = next((c for c in idx["channels"] if c["channel_id"] == active), None)
     if not entry:
-        raise RuntimeError("Canal ativo inválido. Reconecte no app.")
+        raise ReauthRequired("Canal ativo inválido. Reconecte no app.")
+    label = entry.get("title") or active
     token_path = os.path.join(ACCOUNTS_DIR, entry["token_file"])
     if not os.path.exists(token_path):
-        raise RuntimeError("Token do canal ativo sumiu. Reconecte no app.")
+        raise ReauthRequired(f"A sessão do canal “{label}” não está mais salva. Reconecte para continuar.")
 
     creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     if not creds.valid:
@@ -284,24 +293,21 @@ def creds_for_active():
                 # invalid_grant: o Google revogou/expirou o refresh token (acontece
                 # em 7 dias quando o app OAuth está em modo "Testing" no Google
                 # Cloud). O token morto não serve mais — remove para a UI mostrar
-                # o canal como desconectado, e devolve instrução clara.
+                # o canal como desconectado, e sinaliza reconexão (botão na UI).
                 if "invalid_grant" in str(e):
                     try:
                         os.remove(token_path)
                     except OSError:
                         pass
-                    raise RuntimeError(
-                        f"A sessão do Google do canal “{entry.get('title') or active}” "
-                        "expirou ou foi revogada. Abra Configurações → Conta do YouTube "
-                        "e clique em “Conectar” para logar de novo. Dica: se isso se "
-                        "repete a cada ~7 dias, publique o app OAuth no Google Cloud "
-                        "Console (tela de permissão OAuth → “Em produção”)."
+                    raise ReauthRequired(
+                        f"A sessão do Google do canal “{label}” expirou. "
+                        "Clique para reconectar."
                     ) from e
                 raise
             with open(token_path, "w", encoding="utf-8") as fh:
                 fh.write(creds.to_json())
         else:
-            raise RuntimeError("Sessão expirada. Reconecte o canal no app.")
+            raise ReauthRequired(f"A sessão do canal “{label}” expirou. Clique para reconectar.")
     return creds
 
 
