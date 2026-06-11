@@ -4,54 +4,54 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Aspis</title>
+<!-- Fontes clássicas (evocação grega/lapidar): Cinzel = capitais de inscrição
+     de templo (logo, títulos, números); Cardo = serifa erudita com glifos gregos
+     reais, legível em texto corrido. Degradam para serifa do sistema se offline. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #ffffff;
-    --fg: #1a1a1a;
-    --fg-secondary: #6b6b6b;
-    --fg-tertiary: #9a9a9a;
-    --border: rgba(0, 0, 0, 0.10);
-    --hover: rgba(0, 0, 0, 0.025);
-    --score: #8a8a8a;
-    --btn-border: rgba(0, 0, 0, 0.18);
-    --btn-hover: rgba(0, 0, 0, 0.04);
+  /* ===================================================================
+     Dois modos, um par invertido sobre terracota + preto:
+       TRABALHAR (padrão) — fundo terracota, letras pretas. Diurno, ativo.
+       DESCANSAR           — fundo preto,    letras terracota. Noturno, suave.
+     Fontes clássicas (Cinzel/Cardo) evocam o alfabeto grego — Aspis (ἀσπίς).
+     =================================================================== */
+  :root, :root[data-theme="trabalhar"] {
+    --bg: #c97a4d;            /* terracota quente (argila) */
+    --fg: #160f09;           /* preto quente */
+    --fg-secondary: #4a3320;
+    --fg-tertiary: #6d4d31;
+    --border: rgba(20, 12, 4, 0.22);
+    --hover: rgba(20, 12, 4, 0.06);
+    --score: #2e2014;
+    --btn-border: rgba(20, 12, 4, 0.34);
+    --btn-hover: rgba(20, 12, 4, 0.08);
 
-    --pill-invest-bg: #EEEDFE;
-    --pill-invest-fg: #3C3489;
-    --pill-saude-bg: #E1F5EE;
-    --pill-saude-fg: #085041;
-    --pill-pat-bg: #FAECE7;
-    --pill-pat-fg: #712B13;
+    /* pilares: tons terrosos/foscos que assentam sobre a terracota */
+    --pill-invest-bg: #c7b2cf; --pill-invest-fg: #34165a;
+    --pill-saude-bg: #aec5a3;  --pill-saude-fg: #1f3d18;
+    --pill-pat-bg: #e6b48f;    --pill-pat-fg: #6a2c10;
 
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    --mono: "Cardo", Georgia, "Times New Roman", serif;
+    --sans: "Cardo", "GFS Didot", Georgia, "Times New Roman", serif;
+    --display: "Cinzel", "Cardo", Georgia, serif;
   }
-  /* tema escuro: automático (sistema) ou forçado via data-theme="dark" */
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) { --bg:#161616; --fg:#ededed; --fg-secondary:#9c9c9c;
-      --fg-tertiary:#6e6e6e; --border:rgba(255,255,255,0.10); --hover:rgba(255,255,255,0.03);
-      --score:#7e7e7e; --btn-border:rgba(255,255,255,0.18); --btn-hover:rgba(255,255,255,0.05); }
-  }
-  :root[data-theme="dark"] { --bg:#161616; --fg:#ededed; --fg-secondary:#9c9c9c;
-    --fg-tertiary:#6e6e6e; --border:rgba(255,255,255,0.10); --hover:rgba(255,255,255,0.03);
-    --score:#7e7e7e; --btn-border:rgba(255,255,255,0.18); --btn-hover:rgba(255,255,255,0.05); }
-  :root[data-theme="light"] { --bg:#ffffff; --fg:#1a1a1a; --fg-secondary:#6b6b6b;
-    --fg-tertiary:#9a9a9a; --border:rgba(0,0,0,0.10); --hover:rgba(0,0,0,0.025);
-    --score:#8a8a8a; --btn-border:rgba(0,0,0,0.18); --btn-hover:rgba(0,0,0,0.04); }
-  /* tema TERRACOTA: fundo terra quente, texto bronze-escuro */
-  :root[data-theme="terra"] {
-    --bg: #f3e3d3;            /* terracota clara (papel/argila) */
-    --fg: #3a2417;           /* bronze bem escuro */
-    --fg-secondary: #7a5238;
-    --fg-tertiary: #a8825f;
-    --border: rgba(110, 60, 30, 0.18);
-    --hover: rgba(150, 80, 40, 0.06);
-    --score: #9a6a45;
-    --btn-border: rgba(110, 60, 30, 0.30);
-    --btn-hover: rgba(150, 80, 40, 0.10);
-    --pill-invest-bg: #e7d6f0; --pill-invest-fg: #5a2a7a;
-    --pill-saude-bg: #d8ecd2;  --pill-saude-fg: #2c5a22;
-    --pill-pat-bg: #f6ddc8;    --pill-pat-fg: #7a3a13;
+  /* DESCANSAR — inverte: fundo preto, letras terracota */
+  :root[data-theme="descansar"] {
+    --bg: #15110d;           /* preto quente */
+    --fg: #d98a5f;           /* terracota clara (legível no preto) */
+    --fg-secondary: #ad6a44;
+    --fg-tertiary: #855233;
+    --border: rgba(217, 138, 95, 0.18);
+    --hover: rgba(217, 138, 95, 0.06);
+    --score: #c07a47;
+    --btn-border: rgba(217, 138, 95, 0.30);
+    --btn-hover: rgba(217, 138, 95, 0.08);
+
+    --pill-invest-bg: rgba(150, 128, 200, 0.16); --pill-invest-fg: #bda9e6;
+    --pill-saude-bg: rgba(120, 180, 120, 0.15);  --pill-saude-fg: #a2d29c;
+    --pill-pat-bg: rgba(222, 140, 90, 0.16);     --pill-pat-fg: #ecab7c;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -65,6 +65,17 @@
     -webkit-font-smoothing: antialiased;
   }
   .wrap { max-width: 680px; margin: 0 auto; padding: 28px 24px 64px; }
+
+  /* Capitais lapidares (Cinzel) nos destaques e em TODOS os números — o corpo
+     do texto fica na serifa grega Cardo (legível). Números ganham letras
+     versais e leve espaçamento, como gravados em pedra. */
+  .wordmark span, h2, .sec-title, .acct-btn, .btn, .primary, .seg-btn,
+  .reveal, #new-count, .score, .chip-stars-lbl, .thr-val, .pill, .onboard .primary {
+    font-family: var(--display);
+    font-variant-numeric: lining-nums;
+  }
+  #new-count, .score, .thr-val, .chip-stars-lbl { letter-spacing: 0.02em; }
+  .wordmark span { letter-spacing: 0.12em; text-transform: uppercase; }
 
   header { margin-bottom: 22px; }
   .wordmark { font-size: 15px; font-weight: 500; letter-spacing: 0.01em; display: flex; align-items: center; gap: 14px; }
@@ -351,6 +362,7 @@
       <div class="wordmark"><img class="logo" src="logo.png" alt=""><span>Aspis</span></div>
       <div class="top-actions">
         <button class="acct-btn update-pill" id="app-update-btn" onclick="installUpdateFromTop()" style="display:none"></button>
+        <button class="acct-btn" id="mode-btn" onclick="toggleMode()"></button>
         <button class="acct-btn" id="collections-btn" onclick="openCollections()"><span>Coleções</span></button>
         <button class="acct-btn" id="refresh-btn" onclick="doRefresh()"><span>↻ Atualizar</span></button>
         <button class="acct-btn" id="acct-btn" onclick="openAccount()"><span>Conta</span></button>
@@ -417,15 +429,33 @@
   let minStars = 3;
   let rulesText = "";
 
-  // --- tema (auto / claro / escuro / terracota) ---
+  // --- modo (trabalhar / descansar) ---
+  // Trabalhar: fundo terracota, letras pretas (padrão). Descansar: invertido.
   function applyTheme(t) {
-    const root = document.documentElement;
-    if (!t || t === "auto") root.removeAttribute("data-theme");
-    else root.setAttribute("data-theme", t);
-    try { localStorage.setItem("aspis-theme", t || "auto"); } catch (e) {}
+    if (t !== "descansar") t = "trabalhar";
+    document.documentElement.setAttribute("data-theme", t);
+    try { localStorage.setItem("aspis-theme", t); } catch (e) {}
+    renderModeButton();
   }
   function currentTheme() {
-    try { return localStorage.getItem("aspis-theme") || "auto"; } catch (e) { return "auto"; }
+    try {
+      const t = localStorage.getItem("aspis-theme");
+      return t === "descansar" ? "descansar" : "trabalhar";
+    } catch (e) { return "trabalhar"; }
+  }
+  function toggleMode() {
+    applyTheme(currentTheme() === "trabalhar" ? "descansar" : "trabalhar");
+    renderPanel();
+  }
+  function renderModeButton() {
+    const btn = document.getElementById("mode-btn");
+    if (!btn) return;
+    const t = currentTheme();
+    // mostra o modo ATUAL; clicar alterna para o outro
+    btn.innerHTML = t === "trabalhar" ? "<span>☼ Trabalhar</span>" : "<span>☾ Descansar</span>";
+    btn.title = t === "trabalhar"
+      ? "Modo Trabalhar (fundo terracota). Clique para Descansar."
+      : "Modo Descansar (fundo preto). Clique para Trabalhar.";
   }
   applyTheme(currentTheme());  // aplica o quanto antes (evita flash)
 
@@ -1082,10 +1112,10 @@
     const cur = currentTheme();
     const opt = (v, label) => `<button class="seg-btn ${cur===v?"active":""}" onclick="setTheme('${v}')">${label}</button>`;
     return `<div class="section">
-      <div class="sec-title">Tema</div>
-      <div class="sub">Aparência do app.</div>
+      <div class="sec-title">Modo</div>
+      <div class="sub">Trabalhar: fundo terracota, letras pretas. Descansar: o inverso (fundo preto, letras terracota). Também alterna pelo botão no topo.</div>
       <div class="period-seg" style="margin-top:8px">
-        ${opt("auto","Automático")}${opt("light","Claro")}${opt("dark","Escuro")}${opt("terra","Terracota")}
+        ${opt("trabalhar","☼ Trabalhar")}${opt("descansar","☾ Descansar")}
       </div>
     </div>`;
   }
