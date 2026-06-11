@@ -85,10 +85,20 @@
 
   .list { margin-top: 8px; }
   .row {
-    display: grid; grid-template-columns: 20px 1fr; column-gap: 16px;
+    display: grid; grid-template-columns: 20px 28px 1fr; column-gap: 14px;
     padding: 16px 4px; border-top: 0.5px solid var(--border);
     cursor: pointer;
   }
+  .chan-cell { padding-top: 2px; }
+  .chan-icon {
+    width: 28px; height: 28px; border-radius: 50%; object-fit: cover; display: block;
+  }
+  .chan-icon.fallback {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--hover); color: var(--fg-secondary);
+    font-size: 12px; font-weight: 600; user-select: none;
+  }
+  .row.is-read .chan-cell { opacity: 0.55; }
   .list .row:last-child { border-bottom: 0.5px solid var(--border); }
   .row:hover { background: var(--hover); }
   .score { display: flex; justify-content: flex-end; align-items: flex-start; padding-top: 6px; }
@@ -565,6 +575,17 @@
     });
   }
 
+  function chanIconHtml(v) {
+    const initial = esc(((v.channel || "?").trim().charAt(0) || "?").toUpperCase());
+    const fallback = `<div class="chan-icon fallback">${initial}</div>`;
+    if (!v.channel_thumb) return `<div class="chan-cell">${fallback}</div>`;
+    return `<div class="chan-cell">
+      <img class="chan-icon" src="${esc(v.channel_thumb)}" alt="" referrerpolicy="no-referrer"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="chan-icon fallback" style="display:none">${initial}</div>
+    </div>`;
+  }
+
   function rowHtml(v) {
     const m = pillMeta[v.pillar] || pillMeta["nenhum"];
     const pill = `<span class="pill" style="background:${m.bg};color:${m.fg}">${esc(m.label)}</span>`;
@@ -572,6 +593,7 @@
     const n = v.stars || 0;
     return `
       <div class="score">${alignBar(n)}</div>
+      ${chanIconHtml(v)}
       <div>
         <div class="title">${esc(v.neutral_title)}</div>
         <div class="subline">

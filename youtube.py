@@ -90,13 +90,20 @@ def get_subscriptions(service):
     return channel_ids
 
 
+def _thumb_url(snippet):
+    thumbs = snippet.get("thumbnails", {})
+    return (thumbs.get("default") or thumbs.get("medium") or {}).get("url", "")
+
+
 def get_uploads_playlists(service, channel_ids):
-    """channel_id → uploads playlist id. Lotes de 50."""
-    out = {}
+    """Retorna (uploads, thumbs): channel_id → uploads playlist id e
+    channel_id → URL do avatar do canal. Lotes de 50, 1 unidade por lote
+    (o part=snippet extra não custa quota adicional)."""
+    uploads_map, thumbs = {}, {}
     for batch in _chunks(channel_ids, 50):
         resp = (
             service.channels()
-            .list(part="contentDetails", id=",".join(batch), maxResults=50)
+            .list(part="contentDetails,snippet", id=",".join(batch), maxResults=50)
             .execute()
         )
         for item in resp.get("items", []):
@@ -106,7 +113,26 @@ def get_uploads_playlists(service, channel_ids):
                 .get("uploads")
             )
             if uploads:
-                out[item["id"]] = uploads
+                uploads_map[item["id"]] = uploads
+            url = _thumb_url(item.get("snippet", {}))
+            if url:
+                thumbs[item["id"]] = url
+    return uploads_map, thumbs
+
+
+def get_channel_thumbs(service, channel_ids):
+    """channel_id → URL do avatar. Usado para preencher vídeos antigos no banco."""
+    out = {}
+    for batch in _chunks(list(channel_ids), 50):
+        resp = (
+            service.channels()
+            .list(part="snippet", id=",".join(batch), maxResults=50)
+            .execute()
+        )
+        for item in resp.get("items", []):
+            url = _thumb_url(item.get("snippet", {}))
+            if url:
+                out[item["id"]] = url
     return out
 
 
@@ -185,7 +211,7 @@ def fetch_new_videos(since_dt, cfg=None):
     manual = cfg["youtube"].get("channels_manuais")
     channel_ids = manual if manual else get_subscriptions(service)
 
-    uploads = get_uploads_playlists(service, channel_ids)
+    uploads, thumbs = get_uploads_playlists(service, channel_ids)
     new_ids = []
     for _cid, playlist_id in uploads.items():
         new_ids.extend(get_new_video_ids(service, playlist_id, since_dt, max_per))
@@ -193,7 +219,10 @@ def fetch_new_videos(since_dt, cfg=None):
     # dedup preservando ordem
     seen = set()
     new_ids = [v for v in new_ids if not (v in seen or seen.add(v))]
-    return hydrate(service, new_ids)
+    videos = hydrate(service, new_ids)
+    for v in videos:
+        v["channel_thumb"] = thumbs.get(v["channel_id"], "")
+    return videos
 
 
 if __name__ == "__main__":

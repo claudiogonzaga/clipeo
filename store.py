@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS videos (
     downloaded INTEGER DEFAULT 0,
     read INTEGER DEFAULT 0,
     sent_android INTEGER DEFAULT 0,
-    transcript_text TEXT
+    transcript_text TEXT,
+    channel_thumb TEXT
 );
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 -- histórico de perguntas/respostas por vídeo (estilo NotebookLM)
@@ -79,6 +80,8 @@ def init():
             conn.execute("ALTER TABLE videos ADD COLUMN sent_android INTEGER DEFAULT 0")
         if "transcript_text" not in cols:
             conn.execute("ALTER TABLE videos ADD COLUMN transcript_text TEXT")
+        if "channel_thumb" not in cols:
+            conn.execute("ALTER TABLE videos ADD COLUMN channel_thumb TEXT")
 
 
 def now_iso():
@@ -114,7 +117,7 @@ def upsert_video(v):
         "video_id", "channel", "channel_id", "original_title", "neutral_title",
         "url", "published_at", "duration", "pillar", "score", "is_clickbait",
         "resumo", "pontos_chave", "fatos", "citacoes", "transcript_available",
-        "fetched_at", "transcript_text",
+        "fetched_at", "transcript_text", "channel_thumb",
     ]
     placeholders = ", ".join("?" for _ in cols)
     updates = ", ".join(f"{c}=excluded.{c}" for c in cols if c != "video_id")
@@ -195,6 +198,24 @@ def set_flag(video_id, field, value=1):
     with _connect() as conn:
         conn.execute(
             f"UPDATE videos SET {field} = ? WHERE video_id = ?", (value, video_id)
+        )
+
+
+def channel_ids_missing_thumb():
+    """Canais de vídeos no banco ainda sem avatar (para backfill na rotina)."""
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT DISTINCT channel_id FROM videos "
+            "WHERE COALESCE(channel_thumb, '') = '' AND COALESCE(channel_id, '') != ''"
+        ).fetchall()
+    return [r[0] for r in rows]
+
+
+def set_channel_thumb(channel_id, url):
+    with _connect() as conn:
+        conn.execute(
+            "UPDATE videos SET channel_thumb = ? WHERE channel_id = ?",
+            (url, channel_id),
         )
 
 

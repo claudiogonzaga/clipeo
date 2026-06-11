@@ -69,6 +69,7 @@ def run(cfg=None, max_total=None):
                 "video_id": vid,
                 "channel": v.get("channel", ""),
                 "channel_id": v.get("channel_id", ""),
+                "channel_thumb": v.get("channel_thumb", ""),
                 "original_title": v.get("title", ""),
                 "neutral_title": analysis["neutral_title"],
                 "url": v.get("url", ""),
@@ -93,6 +94,18 @@ def run(cfg=None, max_total=None):
             errors += 1
             print(f"[routine] erro no vídeo {vid}: {e}", file=sys.stderr)
             traceback.print_exc()
+
+    # backfill: avatar do canal em vídeos antigos (1 unidade de quota por 50 canais)
+    try:
+        missing = store.channel_ids_missing_thumb()
+        if missing:
+            thumbs = youtube.get_channel_thumbs(youtube.get_service(cfg), missing)
+            for cid, url in thumbs.items():
+                store.set_channel_thumb(cid, url)
+            if thumbs:
+                print(f"[routine] avatar preenchido para {len(thumbs)} canais antigos")
+    except Exception as e:
+        print(f"[routine] aviso: backfill de avatares falhou: {e}", file=sys.stderr)
 
     # passo 4 (M3): nota-digest do dia no Obsidian, se o módulo existir
     try:

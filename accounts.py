@@ -209,11 +209,13 @@ def connect():
         from googleapiclient.discovery import build
 
         flow = InstalledAppFlow.from_client_config(_client_config(), SCOPES)
-        # prompt=select_account: força o seletor de conta/canal do Google.
+        # prompt=consent+select_account: força o seletor de conta/canal E a tela
+        # de consentimento — sem o "consent", reconexões de uma conta que já
+        # autorizou o app voltam SEM refresh_token e a sessão morre em 1 h.
         # access_type=offline: garante refresh_token para uso pela rotina.
         creds = flow.run_local_server(
             port=0,
-            prompt="select_account",
+            prompt="consent select_account",
             access_type="offline",
             authorization_prompt_message="",
             success_message="Conta conectada ao Aspis. Pode fechar esta aba e voltar ao app.",
@@ -274,7 +276,28 @@ def creds_for_active():
     creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     if not creds.valid:
         if creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            from google.auth.exceptions import RefreshError
+
+            try:
+                creds.refresh(Request())
+            except RefreshError as e:
+                # invalid_grant: o Google revogou/expirou o refresh token (acontece
+                # em 7 dias quando o app OAuth está em modo "Testing" no Google
+                # Cloud). O token morto não serve mais — remove para a UI mostrar
+                # o canal como desconectado, e devolve instrução clara.
+                if "invalid_grant" in str(e):
+                    try:
+                        os.remove(token_path)
+                    except OSError:
+                        pass
+                    raise RuntimeError(
+                        f"A sessão do Google do canal “{entry.get('title') or active}” "
+                        "expirou ou foi revogada. Abra Configurações → Conta do YouTube "
+                        "e clique em “Conectar” para logar de novo. Dica: se isso se "
+                        "repete a cada ~7 dias, publique o app OAuth no Google Cloud "
+                        "Console (tela de permissão OAuth → “Em produção”)."
+                    ) from e
+                raise
             with open(token_path, "w", encoding="utf-8") as fh:
                 fh.write(creds.to_json())
         else:
