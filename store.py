@@ -13,6 +13,7 @@ from config import db_path
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS videos (
     video_id TEXT PRIMARY KEY,
+    source TEXT DEFAULT 'youtube',      -- 'youtube' | 'x' (origem do item)
     channel TEXT, channel_id TEXT,
     original_title TEXT, neutral_title TEXT,
     url TEXT, published_at TEXT, duration TEXT,
@@ -82,6 +83,10 @@ def init():
             conn.execute("ALTER TABLE videos ADD COLUMN transcript_text TEXT")
         if "channel_thumb" not in cols:
             conn.execute("ALTER TABLE videos ADD COLUMN channel_thumb TEXT")
+        if "source" not in cols:
+            # bancos antigos: tudo que já existe é do YouTube
+            conn.execute("ALTER TABLE videos ADD COLUMN source TEXT DEFAULT 'youtube'")
+            conn.execute("UPDATE videos SET source = 'youtube' WHERE source IS NULL")
 
 
 def now_iso():
@@ -113,8 +118,9 @@ def upsert_video(v):
         if not isinstance(v.get(f), str):
             v[f] = json.dumps(v.get(f) or [], ensure_ascii=False)
     v.setdefault("fetched_at", now_iso())
+    v.setdefault("source", "youtube")
     cols = [
-        "video_id", "channel", "channel_id", "original_title", "neutral_title",
+        "video_id", "source", "channel", "channel_id", "original_title", "neutral_title",
         "url", "published_at", "duration", "pillar", "score", "is_clickbait",
         "resumo", "pontos_chave", "fatos", "citacoes", "transcript_available",
         "fetched_at", "transcript_text", "channel_thumb",
@@ -130,13 +136,17 @@ def upsert_video(v):
 
 
 def get_videos(filter_pillar=None, min_score=0, day=None, include_read=False,
-               since_iso=None):
+               since_iso=None, source=None):
     """Lista vídeos acima do limiar, ordenados por score desc.
     `day` (YYYY-MM-DD) filtra por published_at exato, se informado.
     `since_iso` (ISO) filtra published_at >= since (janela do período).
-    `include_read=False` (padrão) oculta os marcados como lidos."""
+    `include_read=False` (padrão) oculta os marcados como lidos.
+    `source` ('youtube'|'x'), se informado, filtra pela origem."""
     q = "SELECT * FROM videos WHERE score >= ?"
     args = [min_score]
+    if source:
+        q += " AND COALESCE(source, 'youtube') = ?"
+        args.append(source)
     if not include_read:
         q += " AND COALESCE(read, 0) = 0"
     if filter_pillar:
@@ -171,10 +181,13 @@ def get_video(video_id):
     return _row_to_dict(row) if row else None
 
 
-def count_below(min_score, day=None):
+def count_below(min_score, day=None, source=None):
     """Quantos vídeos ficaram ABAIXO do limiar (para o rodapé)."""
     q = "SELECT COUNT(*) FROM videos WHERE score < ?"
     args = [min_score]
+    if source:
+        q += " AND COALESCE(source, 'youtube') = ?"
+        args.append(source)
     if day:
         q += " AND substr(published_at, 1, 10) = ?"
         args.append(day)
@@ -182,9 +195,12 @@ def count_below(min_score, day=None):
         return conn.execute(q, args).fetchone()[0]
 
 
-def count_at_or_above(min_score, day=None):
+def count_at_or_above(min_score, day=None, source=None):
     q = "SELECT COUNT(*) FROM videos WHERE score >= ?"
     args = [min_score]
+    if source:
+        q += " AND COALESCE(source, 'youtube') = ?"
+        args.append(source)
     if day:
         q += " AND substr(published_at, 1, 10) = ?"
         args.append(day)

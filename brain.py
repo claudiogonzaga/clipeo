@@ -58,14 +58,48 @@ Responda APENAS com o JSON, sem texto antes ou depois, neste formato exato:
 MAX_OUTPUT_TOKENS = 4096  # 1500 truncava o JSON em transcrições longas (parse falhava)
 
 
+def _interesses_text(p):
+    """O que o usuário quer saber neste tema. Campo novo 'interesses' (prosa);
+    para temas legados, sintetiza de descricao + quero."""
+    it = (p.get("interesses") or "").strip()
+    if it:
+        return it
+    parts = []
+    if p.get("descricao"):
+        parts.append(str(p["descricao"]).strip())
+    quero = p.get("quero") or []
+    if isinstance(quero, str):
+        quero = [s.strip() for s in quero.split(",") if s.strip()]
+    if quero:
+        parts.append("Interesses: " + ", ".join(quero))
+    return " ".join(parts).strip()
+
+
+def _evitar_text(p):
+    nq = p.get("nao_quero") or []
+    if isinstance(nq, str):
+        return nq.strip()
+    return ", ".join(nq)
+
+
 def _pillars_block(pilares):
-    linhas = ["Pilares do usuário:"]
+    linhas = [
+        "Temas de interesse do usuário. Para cada tema, avalie o quanto o conteúdo "
+        "entrega o que ele QUER SABER (não o quanto o tema é só 'tocado'). O peso "
+        "(1–5) indica a importância do tema: temas de peso maior pesam mais no "
+        "ranqueamento; conteúdo que serve a um tema de peso alto deve receber score "
+        "mais alto que conteúdo igualmente bom de um tema de peso baixo."
+    ]
     for key, p in pilares.items():
-        linhas.append(
-            f"- {key} ({p.get('nome','')}): {p.get('descricao','')}\n"
-            f"    quero: {', '.join(p.get('quero', []))}\n"
-            f"    não quero: {', '.join(p.get('nao_quero', []))}"
+        quer = _interesses_text(p) or "(não especificado)"
+        evitar = _evitar_text(p)
+        bloco = (
+            f"- {key} ({p.get('nome','')}) [peso {p.get('peso', 3)} de 5]:\n"
+            f"    quer saber: {quer}"
         )
+        if evitar:
+            bloco += f"\n    evitar: {evitar}"
+        linhas.append(bloco)
     return "\n".join(linhas)
 
 
@@ -205,9 +239,16 @@ def _parse_json(text):
     raise ValueError("resposta do LLM não continha JSON válido")
 
 
+def _valid_pillars():
+    """Chaves de pilar aceitas = as configuradas pelo usuário + 'nenhum'."""
+    import config
+
+    return set(config.get_pilares().keys()) | {"nenhum"}
+
+
 def _coerce(obj, video):
     pillar = obj.get("pillar", "nenhum")
-    if pillar not in ("saude", "investimento", "paternidade", "nenhum"):
+    if pillar not in _valid_pillars():
         pillar = "nenhum"
     try:
         score = int(round(float(obj.get("score", 0))))
@@ -247,6 +288,87 @@ def analyze(video, transcript, cfg=None, max_retries=2):
             continue
     raise RuntimeError(
         f"brain.analyze ({name}) falhou após {max_retries+1} tentativas: {last_err}"
+    )
+
+
+# --- análise de UM post do X (Twitter) --------------------------------------
+POST_SYSTEM_RULES = """Você é um curador a serviço dos objetivos de vida do usuário (os "pilares" \
+descritos abaixo). Sua tarefa é avaliar UM post do X (Twitter) — pode ser um tweet \
+isolado ou uma thread — e devolver um JSON estrito com a análise.
+
+IDIOMA: escreva neutral_title, resumo, pontos_chave, fatos e citacoes SEMPRE no \
+MESMO IDIOMA ORIGINAL do post. NÃO traduza. As CHAVES do JSON permanecem como abaixo.
+
+Regras:
+- Classifique o post no pilar mais alinhado, ou "nenhum" se não servir a nenhum.
+- Dê um score 0–100 de alinhamento aos objetivos do usuário (quanto realmente \
+entrega de valor para os pilares, não quão viral/popular é).
+{regras_usuario}
+- O X premia indignação e isca de engajamento. Penalize com força: rage bait, \
+dunks, takes vazios, "thread 🧵" de coach, FOMO, autopromoção, polêmica fabricada. \
+Marque is_clickbait e reduza o score. Um post curto PODE ter score alto se for \
+denso e útil (um dado, um princípio, um link de valor).
+- neutral_title: uma linha neutra e informativa no idioma original (o que o post \
+realmente diz), SEM CAPS, SEM emoji, SEM isca. Sentence case.
+- resumo: 1 a 3 frases, no idioma original. Para posts triviais, seja breve.
+- pontos_chave: pontos acionáveis (lista vazia se não houver — o normal num tweet).
+- fatos_para_memorizar: SÓ conhecimento atômico e testável (fato, definição, \
+princípio). Quase sempre VAZIO num tweet — não polua o Anki com opinião.
+- citacoes: o trecho central do post entre aspas, SEM timestamp (use "" no campo \
+timestamp). Lista vazia se não fizer sentido.
+
+Responda APENAS com o JSON, sem texto antes ou depois, neste formato exato:
+{
+  "pillar": "<uma das chaves de pilar> | nenhum",
+  "score": 0,
+  "is_clickbait": false,
+  "neutral_title": "",
+  "resumo": "",
+  "pontos_chave": [],
+  "fatos_para_memorizar": [],
+  "citacoes": [{"texto": "", "timestamp": ""}]
+}"""
+
+
+def _post_system_text(cfg):
+    import config
+
+    regras = config.get_rules().strip()
+    regras_fmt = "\n".join("- " + ln.strip() for ln in regras.splitlines() if ln.strip())
+    head = POST_SYSTEM_RULES.replace("{regras_usuario}", regras_fmt)
+    return head + "\n\n" + _pillars_block(config.get_pilares())
+
+
+def _build_post_message(post, cfg):
+    parts = [
+        f"Autor: {post.get('channel','')} (@{post.get('channel_id','')})",
+        f"Curtidas: {post.get('likes', 0)} · Reposts: {post.get('retweets', 0)}",
+        f"\nTexto do post:\n{(post.get('text') or '').strip()}",
+    ]
+    return "\n".join(parts)
+
+
+def analyze_post(post, cfg=None, max_retries=2):
+    """Analisa um único post do X com o cérebro ATIVO. `post` é dict com
+    text/channel/channel_id/likes (de x.fetch_new_posts). Retorna o dict pronto
+    para store.upsert_video (mesmo formato de analyze)."""
+    cfg = cfg or load()
+    name, call, pcfg = _resolve_provider(cfg)
+    system_text = _post_system_text(cfg)
+    user_msg = _build_post_message(post, cfg)
+
+    fallback = {"title": (post.get("text") or "")[:120]}
+    last_err = None
+    for _ in range(max_retries + 1):
+        try:
+            text = call(system_text, user_msg, pcfg)
+            obj = _parse_json(text)
+            return _coerce(obj, fallback)
+        except (ValueError, json.JSONDecodeError) as e:
+            last_err = e
+            continue
+    raise RuntimeError(
+        f"brain.analyze_post ({name}) falhou após {max_retries+1} tentativas: {last_err}"
     )
 
 

@@ -23,3 +23,6 @@ requests==2.32.3
 yt-dlp==2026.03.17
 curl_cffi==0.14.0
 faster-whisper
+
+# Segunda fonte: X (Twitter) — leitura via sessão logada (sem API oficial)
+twikit==2.3.3

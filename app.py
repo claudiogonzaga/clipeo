@@ -53,10 +53,10 @@ class Api:
             v["stars"] = config.score_to_stars(v.get("score", 0))
         return videos
 
-    def get_videos(self, pillar=None, include_read=False):
+    def get_videos(self, pillar=None, include_read=False, source="youtube"):
         vids = store.get_videos(
             filter_pillar=pillar, min_score=self.threshold,
-            include_read=include_read, since_iso=self._since_iso(),
+            include_read=include_read, since_iso=self._since_iso(), source=source,
         )
         return self._decorate(vids)
 
@@ -67,15 +67,17 @@ class Api:
             v["stars"] = config.score_to_stars(v.get("score", 0))
         return v
 
-    def new_count(self):
+    def new_count(self, source="youtube"):
         # "novos" = acima do limiar, não lidos, dentro do período
         return len(store.get_videos(
-            min_score=self.threshold, include_read=False, since_iso=self._since_iso()))
+            min_score=self.threshold, include_read=False,
+            since_iso=self._since_iso(), source=source))
 
-    def read_count(self):
+    def read_count(self, source="youtube"):
         return len(store.get_videos(
-            min_score=self.threshold, include_read=True, since_iso=self._since_iso())) \
-            - self.new_count()
+            min_score=self.threshold, include_read=True,
+            since_iso=self._since_iso(), source=source)) \
+            - self.new_count(source=source)
 
     def set_read(self, video_id, value=1):
         store.set_flag(video_id, "read", int(value))
@@ -140,8 +142,76 @@ class Api:
         finally:
             self._refreshing = False
 
-    def filtered_count(self, day=None):
-        return store.count_below(self.threshold, day=day)
+    def refresh_x(self, max_total=25):
+        """Botão Atualizar da aba X: roda o pipeline do X na hora (timeline →
+        analisa → grava). Exige a conta do X conectada e a chave do Gemini."""
+        if self._refreshing:
+            return {"ok": False, "error": "Atualização já em andamento."}
+        import x_accounts
+
+        if not x_accounts.connected():
+            return {"ok": False, "error": "Conecte sua conta do X primeiro."}
+        import keystore
+
+        env, _ = self._llm_env()
+        if not keystore.has(env):
+            return {"ok": False, "error": "Configure a chave do Gemini primeiro."}
+
+        self._refreshing = True
+        try:
+            import routine
+
+            summary = routine.run_x(self.cfg, max_total=max_total)
+            return {"ok": True, **summary}
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "error": str(e)}
+        finally:
+            self._refreshing = False
+
+    def add_link(self, url):
+        """Adiciona UM link avulso (vídeo do YouTube ou post do X) ao feed: o
+        Aspis busca a transcrição/metadados, passa pelo cérebro e grava — como o
+        Aspis Android faz. Devolve a fonte e o id para a UI abrir o item, ou um
+        erro legível."""
+        import routine
+
+        source, item_id = routine.detect_link(url)
+        if not source:
+            return {"ok": False, "error":
+                    "Link não reconhecido. Cole o link de um vídeo do YouTube "
+                    "ou de um post do X."}
+
+        import keystore
+
+        env, _ = self._llm_env()
+        if not keystore.has(env):
+            return {"ok": False, "error": "Configure a chave do Gemini primeiro."}
+
+        import accounts  # também usado no except ReauthRequired abaixo
+        if source == "youtube":
+            try:
+                if not accounts.status().get("active"):
+                    return {"ok": False, "error": "Conecte um canal do YouTube primeiro."}
+            except Exception:
+                pass
+        else:
+            import x_accounts
+
+            if not x_accounts.connected():
+                return {"ok": False, "error": "Conecte sua conta do X primeiro."}
+
+        try:
+            return routine.add_link(url, self.cfg)
+        except accounts.ReauthRequired as e:
+            return {"ok": False, "error": str(e), "reauth": True}
+        except Exception as e:  # noqa: BLE001 — erro vai para a UI
+            msg = str(e)
+            if "429" in msg or "Too Many Requests" in msg:
+                msg = "O serviço limitou agora — tente em instantes."
+            return {"ok": False, "error": msg}
+
+    def filtered_count(self, day=None, source="youtube"):
+        return store.count_below(self.threshold, day=day, source=source)
 
     # --- ações ---
     def save_obsidian(self, video_id):
@@ -154,6 +224,42 @@ class Api:
             print(f"[m2] save_obsidian({video_id}) — obsidian.py chega no M3")
         store.set_flag(video_id, "saved_obsidian", 1)
         return {"ok": True}
+
+    def listen_analysis(self, video_id):
+        """Ouvir a análise em voz do Gemini TTS (toca via afplay no macOS)."""
+        try:
+            import subprocess
+            import tempfile
+
+            import geminiTTS
+
+            v = store.get_video(video_id)
+            if not v:
+                return {"ok": False, "error": "vídeo não encontrado"}
+            wav = geminiTTS.synthesize(geminiTTS.narration(v), geminiTTS.resolve_key(self.cfg))
+            fd, path = tempfile.mkstemp(prefix="aspis_tts_", suffix=".wav")
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(wav)
+            subprocess.Popen(["afplay", path])  # não bloqueia a UI
+            return {"ok": True}
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "error": str(e)}
+
+    def save_audio(self, video_id):
+        """Salva o áudio da análise no vault e deixa a nota como nota de áudio."""
+        try:
+            import geminiTTS
+            import obsidian
+
+            v = store.get_video(video_id)
+            if not v:
+                return {"ok": False, "error": "vídeo não encontrado"}
+            wav = geminiTTS.synthesize(geminiTTS.narration(v), geminiTTS.resolve_key(self.cfg))
+            path = obsidian.save_audio(video_id, wav, self.cfg)
+            store.set_flag(video_id, "saved_obsidian", 1)
+            return {"ok": True, "path": path}
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "error": str(e)}
 
     def save_anki(self, video_id):
         try:
@@ -336,6 +442,24 @@ class Api:
 
         return accounts.clear_client()
 
+    # --- conta do X (Twitter): login por sessão dentro do app ---------------
+    def x_status(self):
+        import x_accounts
+
+        return x_accounts.status()
+
+    def x_login(self, username, email, password):
+        """Loga no X com usuário/e-mail/senha e salva só os cookies de sessão.
+        A senha não é persistida. Devolve a conta conectada ou um erro legível."""
+        import x_accounts
+
+        return x_accounts.login(username, email, password)
+
+    def x_remove(self):
+        import x_accounts
+
+        return x_accounts.remove()
+
     # --- chave do LLM (Gemini) ---
     def _llm_env(self):
         """Nome da variável de ambiente da chave do provedor ativo."""
@@ -426,17 +550,38 @@ class Api:
         cfg = config.save_whisper(model=model, enabled=enabled, auto_on_block=auto_on_block)
         return {"ok": True, **cfg}
 
-    # --- objetivos (pilares) editáveis, com peso ---
+    # --- objetivos (temas) editáveis: título + interesses (prosa) + evitar ---
+    @staticmethod
+    def _interesses_of(p):
+        """O que o usuário quer saber neste tema. Usa o campo novo 'interesses'
+        (prosa); para temas legados, sintetiza de descricao + quero."""
+        it = (p.get("interesses") or "").strip()
+        if it:
+            return it
+        parts = []
+        if p.get("descricao"):
+            parts.append(str(p["descricao"]).strip())
+        q = p.get("quero") or []
+        if isinstance(q, str):
+            q = [s.strip() for s in q.split(",") if s.strip()]
+        if q:
+            parts.append("Interesses: " + ", ".join(q))
+        return " ".join(parts).strip()
+
     def get_pilares(self):
         import config
 
-        return [
-            {"id": k, "nome": p.get("nome", k),
-             "descricao": p.get("descricao", ""), "peso": p.get("peso", 3),
-             "quero": ", ".join(p.get("quero", []) or []),
-             "nao_quero": ", ".join(p.get("nao_quero", []) or [])}
-            for k, p in config.get_pilares().items()
-        ]
+        out = []
+        for k, p in config.get_pilares().items():
+            nq = p.get("nao_quero", []) or []
+            out.append({
+                "id": k,
+                "nome": p.get("nome", k),
+                "interesses": self._interesses_of(p),
+                "peso": p.get("peso", 3),
+                "nao_quero": ", ".join(nq) if isinstance(nq, list) else str(nq),
+            })
+        return out
 
     def save_pilares(self, items):
         import re
@@ -449,7 +594,6 @@ class Api:
             s = re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
             return s[:24] or "obj"
 
-        prev = config.get_pilares()
         out = {}
         for it in (items or []):
             nome = (it.get("nome") or "").strip()
@@ -464,26 +608,24 @@ class Api:
                 peso = int(it.get("peso", 3))
             except (TypeError, ValueError):
                 peso = 3
-            old = prev.get(it.get("id", ""), {})
 
             def _list(field):
-                # aceita string "a, b, c" (da UI) ou lista; senão preserva antiga
+                # "evitar": aceita string "a, b, c" (da UI) ou lista
                 val = it.get(field, None)
                 if isinstance(val, str):
                     return [s.strip() for s in val.split(",") if s.strip()]
                 if isinstance(val, list):
                     return val
-                return old.get(field, [])
+                return []
 
             out[key] = {
                 "nome": nome,
-                "descricao": (it.get("descricao") or "").strip(),
-                "quero": _list("quero"),
+                "interesses": (it.get("interesses") or "").strip(),
                 "nao_quero": _list("nao_quero"),
                 "peso": max(1, min(5, peso)),
             }
         if not out:
-            return {"ok": False, "error": "Defina ao menos um objetivo."}
+            return {"ok": False, "error": "Defina ao menos um tema."}
         config.save_pilares(out)
         return {"ok": True, "pilares": self.get_pilares()}
 

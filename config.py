@@ -77,6 +77,29 @@ def db_path():
     return USER_DB
 
 
+# --- fonte X (Twitter) ------------------------------------------------------
+def get_x_config():
+    """Bloco `x:` do config.yaml, com defaults garantidos. As contas a seguir,
+    o teto de posts por execução e o piso de curtidas (filtro de ruído)."""
+    x = (load().get("x", {}) or {})
+    accounts = x.get("accounts") or []
+    if isinstance(accounts, str):
+        accounts = [a.strip() for a in accounts.split(",") if a.strip()]
+    try:
+        max_posts = int(x.get("max_posts_per_account", 20))
+    except (TypeError, ValueError):
+        max_posts = 20
+    try:
+        min_likes = int(x.get("min_likes", 0))
+    except (TypeError, ValueError):
+        min_likes = 0
+    return {
+        "accounts": [str(a).lstrip("@").strip() for a in accounts if str(a).strip()],
+        "max_posts_per_account": max(1, max_posts),
+        "min_likes": max(0, min_likes),
+    }
+
+
 # --- objetivos (pilares) editáveis pelo usuário -----------------------------
 USER_PILARES = os.path.join(USER_DIR, "pilares.json")
 DEFAULT_PESO = 3
@@ -135,37 +158,37 @@ def _save_prefs(p):
         json.dump(p, fh, ensure_ascii=False, indent=2)
 
 
-# --- estrelas (0–5) ----------------------------------------------------------
-# Faixas de score → estrelas. Cada estrela exige um score mínimo.
-STAR_MIN_SCORE = {0: 0, 1: 20, 2: 40, 3: 60, 4: 80, 5: 95}
+# --- alinhamento (escala Likert 0–4) -----------------------------------------
+# Faixas de score → nível de alinhamento. Limiares simétricos (passo 25), com o
+# centro (nível 2) = score ≥ 50.
+STAR_MIN_SCORE = {0: 0, 1: 25, 2: 50, 3: 75, 4: 90}
 
 
 def score_to_stars(score):
-    """Converte score 0–100 em 0–5 estrelas (faixas de 20, 5★ = 95+)."""
+    """Converte score 0–100 no nível de alinhamento Likert 0–4."""
     s = max(0, min(100, int(score or 0)))
     stars = 0
-    for k in (1, 2, 3, 4, 5):
+    for k in (1, 2, 3, 4):
         if s >= STAR_MIN_SCORE[k]:
             stars = k
     return stars
 
 
 def get_min_stars():
-    """Estrelas mínimas para um vídeo aparecer na lista (0–5)."""
+    """Nível mínimo de alinhamento para um vídeo aparecer (0–4)."""
     p = _load_prefs()
     if "min_stars" in p:
         try:
-            return max(0, min(5, int(p["min_stars"])))
+            return max(0, min(4, int(p["min_stars"])))
         except (TypeError, ValueError):
             pass
-    # default a partir do limiar legado (score_threshold) ou 3★
-    legacy = p.get("score_threshold", load().get("score_threshold", 60))
-    return score_to_stars(legacy)
+    # default = centro da escala (nível 2 = 50%)
+    return 2
 
 
 def set_min_stars(value):
     p = _load_prefs()
-    p["min_stars"] = max(0, min(5, int(value)))
+    p["min_stars"] = max(0, min(4, int(value)))
     _save_prefs(p)
     return p["min_stars"]
 

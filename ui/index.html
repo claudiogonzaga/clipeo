@@ -71,6 +71,19 @@
   .wordmark .logo { width: 88px; height: 88px; border-radius: 50%; display: block; }
   .meta { margin-top: 3px; font-size: 12.5px; color: var(--fg-secondary); }
   .meta .dot { margin: 0 6px; color: var(--fg-tertiary); }
+  /* abas de fonte (YouTube / X) */
+  .tabs { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--border); }
+  .tab {
+    font-family: var(--sans); font-size: 13.5px; font-weight: 500; color: var(--fg-tertiary);
+    background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer;
+    padding: 6px 10px; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .tab:hover { color: var(--fg-secondary); }
+  .tab.active { color: var(--fg); border-bottom-color: var(--fg); }
+  .tab .tab-ico { width: 15px; height: 15px; display: inline-flex; align-items: center; justify-content: center; }
+  .tab .tab-ico svg { width: 100%; height: 100%; }
+  /* formulário de login do X */
+  .xform { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 
   .chips { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
   .chip {
@@ -104,12 +117,18 @@
   .score { display: flex; justify-content: flex-end; align-items: flex-start; padding-top: 6px; }
   /* alinhamento: ponto de cor por card */
   .align-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
-  /* gradiente contínuo no filtro */
+  /* gradiente contínuo no filtro (Likert 0–4: 5 cores) */
   .align-track { position: relative; height: 6px; border-radius: 3px;
-    background: linear-gradient(to right, #e0443e, #e8803a, #e8c13a, #5bb24a, #3a86c8, #8a5cc8);
+    background: linear-gradient(to right, #e0443e, #e8803a, #e8c13a, #5bb24a, #3a86c8);
     cursor: pointer; flex: 1 1 auto; }
   .align-track-mask { position: absolute; top:0; left:0; height:100%; border-radius:3px 0 0 3px;
     background: var(--bg); opacity: .72; pointer-events: none; transition: width .12s; }
+  /* pontos discretos da escala Likert: pequeno círculo da cor da linha naquele
+     ponto, com um anel da cor do fundo (separa do gradiente) — nunca preto */
+  .align-pt { position: absolute; top: 50%; transform: translate(-50%,-50%);
+    width: 9px; height: 9px; border-radius: 50%;
+    border: 1.5px solid var(--bg); pointer-events: none; transition: left .12s, width .12s; }
+  .align-pt.sel { width: 14px; height: 14px; border: 2px solid var(--bg); }
   .align-thumb { position: absolute; top: 50%; transform: translate(-50%,-50%);
     width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--bg);
     box-shadow: 0 1px 4px rgba(0,0,0,.28); pointer-events: none; transition: left .12s; }
@@ -295,12 +314,45 @@
     border: 0.5px solid var(--btn-border); border-radius: 8px; padding: 8px 10px;
     background: transparent; color: var(--fg);
   }
-  .obj { padding: 10px 0; border-top: 0.5px solid var(--border); }
-  .obj:first-of-type { border-top: none; }
-  .obj-head { display: flex; gap: 8px; align-items: center; }
-  .obj-head .inp { flex: 1 1 auto; }
-  .peso-sel { font-size: 12px; padding: 6px 6px; border-radius: 7px; border: 0.5px solid var(--btn-border); background: transparent; color: var(--fg); }
-  .obj-desc { min-height: 56px; margin-top: 8px; }
+  /* cartão de TEMA (objetivos redesenhados): título + interesses em prosa */
+  .theme {
+    border: 0.5px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; margin-top: 12px; background: var(--hover);
+  }
+  .theme-head { display: flex; align-items: center; gap: 8px; }
+  .theme-title {
+    flex: 1 1 auto; min-width: 0; font-family: var(--sans); font-size: 16px;
+    font-weight: 500; color: var(--fg); background: transparent; padding: 2px 0;
+    border: none; border-bottom: 1.5px solid var(--btn-border); border-radius: 0;
+  }
+  .theme-title:focus { outline: none; border-bottom-color: var(--fg); }
+  .theme-del {
+    flex: 0 0 auto; background: none; border: none; cursor: pointer;
+    color: var(--fg-tertiary); font-size: 14px; padding: 4px 6px; border-radius: 6px;
+  }
+  .theme-del:hover { color: var(--fg); background: var(--btn-hover); }
+  .obj-meta { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; }
+  .obj-meta-lbl { font-size: 11.5px; color: var(--fg-tertiary); }
+  .peso-row { display: inline-flex; gap: 5px; }
+  .peso-dot {
+    width: 11px; height: 11px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--btn-border); background: transparent; transition: background .1s;
+  }
+  .peso-dot.on { background: var(--fg); border-color: var(--fg); }
+  .theme-flbl { font-size: 12px; color: var(--fg-tertiary); margin: 10px 0 6px; }
+  .theme-int {
+    font-family: var(--sans); font-size: 13.5px; line-height: 1.6;
+    min-height: 92px; margin-top: 0;
+  }
+  .theme-avoid { margin-top: 10px; }
+  .theme-avoid summary {
+    font-size: 12px; color: var(--fg-tertiary); cursor: pointer; list-style: none;
+    user-select: none; padding: 2px 0;
+  }
+  .theme-avoid summary::-webkit-details-marker { display: none; }
+  .theme-avoid summary::before { content: "› "; }
+  .theme-avoid[open] summary::before { content: "⌄ "; }
+  .theme-avoid .inp { margin-top: 8px; font-size: 12px; }
   .wcheck { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--fg-secondary); margin-top: 10px; cursor: pointer; }
   .wcheck input { margin: 0; }
   .row.is-read .title { color: var(--fg-secondary); }
@@ -317,7 +369,6 @@
   .star-pick { font-size: 22px; line-height: 1; background: none; border: none; cursor: pointer; color: var(--border); padding: 0 2px; }
   .star-pick.on { color: #d8a13a; }
   .star-row .thr-val { margin-left: 8px; color: var(--fg-secondary); }
-  .obj-q, .obj-n { margin-top: 6px; }
   .qa-save { margin-top: 6px; font-size: 11px; }
   .ci-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
   .ci { padding: 12px; border: 0.5px solid var(--border); border-radius: 10px; position: relative; user-select: text; }
@@ -351,11 +402,22 @@
       <div class="wordmark"><img class="logo" src="logo.png" alt=""><span>Aspis</span></div>
       <div class="top-actions">
         <button class="acct-btn update-pill" id="app-update-btn" onclick="installUpdateFromTop()" style="display:none"></button>
+        <button class="acct-btn" id="addlink-btn" onclick="openAddLink()" title="Cole o link de um vídeo do YouTube ou post do X para o Aspis analisar e adicionar ao feed."><span>+ Link</span></button>
         <button class="acct-btn" id="collections-btn" onclick="openCollections()"><span>Coleções</span></button>
         <button class="acct-btn" id="refresh-btn" onclick="doRefresh()"><span>↻ Atualizar</span></button>
         <button class="acct-btn" id="acct-btn" onclick="openAccount()"><span>Conta</span></button>
         <button class="acct-btn gear-btn" id="settings-btn" onclick="openSettings('all')" title="Configurações: objetivos, pesos, critérios da IA, estrelas, Gemini, Whisper e atualizações." aria-label="Configurações">⚙</button>
       </div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" id="tab-youtube" onclick="setSource('youtube')">
+        <span class="tab-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8z"/><path fill="#fff" d="M9.6 15.6V8.4l6.2 3.6z"/></svg></span>
+        <span>YouTube</span>
+      </button>
+      <button class="tab" id="tab-x" onclick="setSource('x')">
+        <span class="tab-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-7.1 8.1L23.2 22h-6.6l-5.2-6.8L5.5 22H2.4l7.6-8.7L1.2 2h6.8l4.7 6.2zm-1.1 18h1.8L7.3 3.9H5.4z"/></svg></span>
+        <span>X</span>
+      </button>
     </div>
     <div class="meta">
       <span id="new-count">—</span>
@@ -410,11 +472,13 @@
   let expandedId = null;
   let showRead = false;   // mostrar também os marcados como lidos
   let period = "day";     // day | week | month
+  let currentSource = "youtube";   // aba ativa: 'youtube' | 'x'
   let ytStatus = { client_configured: false, channels: [], active: null };
+  let xStatus = { connected: false, account: null };
   let geminiStatus = { configured: false, masked: "", provider: "gemini" };
   let whisperStatus = { model: "base", enabled: false, auto_on_block: true, models: [], downloaded: [] };
   let updateStatus = {};   // {checking|error|current|latest|update_available|dmg_url}
-  let minStars = 3;
+  let minStars = 2; // default = centro da escala Likert (50%)
   let rulesText = "";
 
   // --- tema (auto / claro / escuro / terracota) ---
@@ -429,17 +493,31 @@
   }
   applyTheme(currentTheme());  // aplica o quanto antes (evita flash)
 
-  // espectro de alinhamento: 0=vermelho (pior) → 5=violeta (melhor)
-  const ALIGN_COLORS = ["#e0443e", "#e8803a", "#e8c13a", "#5bb24a", "#3a86c8", "#8a5cc8"];
-  const ALIGN_LABELS = ["mínimo", "baixo", "médio", "bom", "alto", "máximo"];
-  function alignColor(n) { return ALIGN_COLORS[Math.max(0, Math.min(5, n))]; }
+  // alinhamento — escala Likert 0–4: 0=vermelho (pior) → 4=azul (melhor)
+  const ALIGN_MAX = 4;
+  const ALIGN_COLORS = ["#e0443e", "#e8803a", "#e8c13a", "#5bb24a", "#3a86c8"];
+  const ALIGN_LABELS = ["mínimo", "baixo", "médio", "alto", "máximo"];
+  function alignColor(n) { return ALIGN_COLORS[Math.max(0, Math.min(ALIGN_MAX, n))]; }
 
-  // ponto de cor único: vermelho (0) → violeta (5)
+  // ponto de cor único: vermelho (0) → azul (4)
   function alignBar(n) {
-    n = Math.max(0, Math.min(5, n || 0));
+    n = Math.max(0, Math.min(ALIGN_MAX, n || 0));
     const color = alignColor(n);
     const label = ALIGN_LABELS[n];
-    return `<span class="align-dot" style="background:${color};box-shadow:0 0 6px ${color}66" title="${label} (${n}/5)"></span>`;
+    return `<span class="align-dot" style="background:${color};box-shadow:0 0 6px ${color}66" title="${label} (${n}/${ALIGN_MAX})"></span>`;
+  }
+
+  // HTML dos 5 pontos discretos sobre a linha (Likert). O selecionado fica
+  // maior e colorido; os demais são marcadores neutros para mostrar onde clicar.
+  function alignDotsHtml(sel) {
+    let out = "";
+    for (let i = 0; i <= ALIGN_MAX; i++) {
+      const left = (i / ALIGN_MAX) * 100;
+      const on = i === sel;
+      // sempre a cor da linha naquele nível; o selecionado só fica maior
+      out += `<div class="align-pt${on ? " sel" : ""}" style="left:${left}%;background:${alignColor(i)}"></div>`;
+    }
+    return out;
   }
 
   // Bridge: pywebview injects `pywebview.api`. We wait for it.
@@ -523,43 +601,35 @@
   function renderAlignRow() {
     const row = document.getElementById("align-row");
     if (!row) return;
-    const pct = minStars > 0 ? Math.round(((minStars - 0.5) / 5) * 100) : 0;
-    const thumbColor = minStars > 0 ? ALIGN_COLORS[minStars] : "var(--fg-tertiary)";
     row.innerHTML = `
       <span class="align-lbl">não alinhado</span>
-      <div class="align-track" id="align-track-main">
-        <div class="align-track-mask" style="width:${pct}%"></div>
-        <div class="align-thumb" style="left:${pct}%;background:${thumbColor}"></div>
-      </div>
+      <div class="align-track" id="align-track-main">${alignDotsHtml(minStars)}</div>
       <span class="align-lbl">muito alinhado</span>`;
     const track = row.querySelector(".align-track");
-    // clique: move o thumb para o ponto clicado
-    track.addEventListener("click", async (e) => {
+    const levelAt = (e) => {
       const rect = track.getBoundingClientRect();
       const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const n = Math.round(ratio * 5);
-      minStars = (n === minStars) ? 0 : n;
+      return Math.round(ratio * ALIGN_MAX);
+    };
+    const paint = (n) => { track.innerHTML = alignDotsHtml(n); };
+    // clique: seleciona o ponto mais próximo
+    track.addEventListener("click", async (e) => {
+      minStars = levelAt(e);
+      paint(minStars);
       try { await api().set_min_stars(minStars); } catch (err) {}
       expandedId = null; load();
     });
-    // arrastar: atualiza em tempo real enquanto arrasta
+    // arrastar: atualiza os pontos em tempo real
     let dragging = false;
-    track.addEventListener("mousedown", () => { dragging = true; });
+    track.addEventListener("mousedown", (e) => {
+      dragging = true;
+      const n = levelAt(e);
+      if (n !== minStars) { minStars = n; paint(n); }
+    });
     document.addEventListener("mousemove", (e) => {
       if (!dragging) return;
-      const rect = track.getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const n = Math.round(ratio * 5);
-      if (n !== minStars) {
-        minStars = n;
-        // atualiza o visual imediatamente sem reload completo
-        const newPct = n > 0 ? Math.round(((n - 0.5) / 5) * 100) : 0;
-        const tc = n > 0 ? ALIGN_COLORS[n] : "var(--fg-tertiary)";
-        track.querySelector(".align-track-mask").style.width = newPct + "%";
-        const thumb = track.querySelector(".align-thumb");
-        thumb.style.left = newPct + "%";
-        thumb.style.background = tc;
-      }
+      const n = levelAt(e);
+      if (n !== minStars) { minStars = n; paint(n); }
     });
     document.addEventListener("mouseup", async () => {
       if (!dragging) return;
@@ -601,6 +671,13 @@
     const pill = `<span class="pill" style="background:${m.bg};color:${m.fg}">${esc(m.label)}</span>`;
     const cb = v.is_clickbait ? `<span class="clickbait-flag">· sensacionalista</span>` : "";
     const n = v.stars || 0;
+    // no X mostramos o @handle no lugar da duração (post não tem duração)
+    const second = (v.source === "x")
+      ? (v.channel_id ? `@${esc(v.channel_id)}` : "")
+      : esc(v.duration);
+    const secondBit = second
+      ? `<span class="dot" style="color:var(--fg-tertiary)">·</span><span>${second}</span>`
+      : "";
     return `
       <div class="score">${alignBar(n)}</div>
       ${chanIconHtml(v)}
@@ -608,8 +685,7 @@
         <div class="title">${esc(v.neutral_title)}</div>
         <div class="subline">
           <span>${esc(v.channel)}</span>
-          <span class="dot" style="color:var(--fg-tertiary)">·</span>
-          <span>${esc(v.duration)}</span>
+          ${secondBit}
           ${pill}${cb}
         </div>
         <div class="synth-host"></div>
@@ -628,6 +704,22 @@
     const b = (flag, label, labelDone, action, tip) =>
       `<button class="btn ${v[flag] ? "done" : ""}" data-action="${action}" title="${esc(tip)}">${v[flag] ? labelDone : label}</button>`;
 
+    const isX = v.source === "x";
+    // botões só-de-vídeo (assistir/baixar/Android) não fazem sentido para posts
+    const videoActions = isX ? "" : `
+          <button class="btn" data-action="watch" title="Baixa o vídeo e abre no player do seu Mac (não abre o YouTube). Fica salvo em ~/Aspis/Downloads.">Assistir</button>`;
+    const downloadActions = isX ? "" : `
+          ${b("downloaded", "Baixar", "✓ Baixado", "download", "Baixa o vídeo em MP4 para ~/Aspis/Downloads (para assistir offline).")}
+          ${b("sent_android", "Enviar p/ Android", "✓ No Android", "android", "Baixa (se preciso) e copia o MP4 para ~/Aspis/ParaAndroid. Aponte o Syncthing para essa pasta e o vídeo aparece no celular.")}`;
+    const collectTip = isX ? "Salvar o post (e/ou seu resumo) numa coleção / bloco de notas." : "Salvar o vídeo (e/ou seu resumo) numa coleção / bloco de notas.";
+    const revealTip = isX ? "Mostra o texto original do post, sem a neutralização." : "Mostra o título original (sensacionalista) do YouTube, antes da neutralização.";
+    const revealLabel = isX ? "texto original" : "título original";
+    const exploreTitle = isX ? "Explorar este post" : "Explorar este vídeo";
+    const askPlaceholder = isX ? "Pergunte algo sobre o post…" : "Pergunte algo sobre o vídeo…";
+    const exploreHint = isX
+      ? "A IA responde com base no texto do post. As perguntas ficam salvas aqui."
+      : "A IA responde consultando a transcrição completa. As perguntas ficam salvas aqui.";
+
     return `
       <div class="synth">
         <div class="copywrap">
@@ -636,28 +728,27 @@
           ${points ? `<ul class="points copytarget">${points}</ul>` : ""}
         </div>
         ${metaLine}
-        <div class="actions">
-          <button class="btn" data-action="watch" title="Baixa o vídeo e abre no player do seu Mac (não abre o YouTube). Fica salvo em ~/Aspis/Downloads.">Assistir</button>
+        <div class="actions">${videoActions}
+          <button class="btn" data-action="listen" title="Ouve a análise (resumo + pontos-chave) na voz do Gemini.">🔊 Ouvir análise</button>
+          <button class="btn" data-action="save_audio" title="Gera o áudio da análise e salva no vault como nota de áudio (tocável no Obsidian).">🎙️ Salvar áudio</button>
           ${b("saved_obsidian", "Obsidian", "✓ Obsidian", "obsidian", "Salva a síntese (resumo + pontos-chave) como nota no seu vault do Obsidian.")}
-          ${b("saved_anki", "Anki", "✓ Anki", "anki", "Cria cards no Anki a partir dos fatos memorizáveis deste vídeo.")}
-          ${b("downloaded", "Baixar", "✓ Baixado", "download", "Baixa o vídeo em MP4 para ~/Aspis/Downloads (para assistir offline).")}
-          ${b("sent_android", "Enviar p/ Android", "✓ No Android", "android", "Baixa (se preciso) e copia o MP4 para ~/Aspis/ParaAndroid. Aponte o Syncthing para essa pasta e o vídeo aparece no celular.")}
+          ${b("saved_anki", "Anki", "✓ Anki", "anki", "Cria cards no Anki a partir dos fatos memorizáveis.")}${downloadActions}
           ${b("read", "Marcar lido", "✓ Lido", "read", "Marca como lido: some da lista principal (volta com o filtro 'Mostrar lidos').")}
-          <button class="btn" data-action="collect" title="Salvar o vídeo (e/ou seu resumo) numa coleção / bloco de notas.">+ Coleção</button>
-          <button class="reveal" data-action="reveal" title="Mostra o título original (sensacionalista) do YouTube, antes da neutralização.">título original</button>
+          <button class="btn" data-action="collect" title="${esc(collectTip)}">+ Coleção</button>
+          <button class="reveal" data-action="reveal" title="${esc(revealTip)}">${revealLabel}</button>
         </div>
         <div class="hint">Passe o mouse sobre os botões para ver o que cada um faz.</div>
         <div class="original-title hidden">“${esc(v.original_title)}”</div>
 
         <div class="explore">
-          <div class="explore-title">Explorar este vídeo</div>
+          <div class="explore-title">${exploreTitle}</div>
           <div class="qa-list" id="qa-${v.video_id}"></div>
           <div class="ask-row">
-            <input class="ask-input" id="ask-${v.video_id}" placeholder="Pergunte algo sobre o vídeo…"
+            <input class="ask-input" id="ask-${v.video_id}" placeholder="${esc(askPlaceholder)}"
                    onkeydown="if(event.key==='Enter'){event.stopPropagation();askVideo('${v.video_id}')}">
             <button class="primary ask-btn" onclick="event.stopPropagation();askVideo('${v.video_id}')">Perguntar</button>
           </div>
-          <div class="explore-hint">A IA responde consultando a transcrição completa. As perguntas ficam salvas aqui.</div>
+          <div class="explore-hint">${exploreHint}</div>
         </div>
       </div>`;
   }
@@ -923,6 +1014,18 @@
         });
         return;
       }
+      if (action === "listen") {
+        flash("Gerando áudio…");
+        const r = await a.listen_analysis(v.video_id);
+        if (r && !r.ok) flash((r && r.error) || "Não foi possível gerar o áudio.");
+        return;
+      }
+      if (action === "save_audio") {
+        flash("Gerando áudio…");
+        const r = await a.save_audio(v.video_id);
+        if (r && r.ok) { v.saved_obsidian = 1; flash("Áudio salvo no vault."); }
+        else { flash((r && r.error) || "Não foi possível salvar o áudio."); return; }
+      }
       if (action === "obsidian") { await a.save_obsidian(v.video_id); v.saved_obsidian = 1; }
       if (action === "anki")     { await a.save_anki(v.video_id);     v.saved_anki = 1; }
       if (action === "download") { await a.download(v.video_id);      v.downloaded = 1; }
@@ -946,6 +1049,7 @@
     const a = api();
     if (!a) return;
     try { ytStatus = await a.yt_status(); } catch (e) { console.error("yt_status", e); }
+    try { xStatus = await a.x_status(); } catch (e) { console.error("x_status", e); }
     try { geminiStatus = await a.gemini_status(); } catch (e) { console.error("gemini_status", e); }
     try { whisperStatus = await a.whisper_status(); } catch (e) { console.error("whisper_status", e); }
     renderAcctButton();
@@ -953,6 +1057,16 @@
 
   function renderAcctButton() {
     const btn = document.getElementById("acct-btn");
+    if (currentSource === "x") {
+      const acc = xStatus.account;
+      if (xStatus.connected && acc) {
+        btn.innerHTML = (acc.thumb ? `<img src="${esc(acc.thumb)}" alt="">` : "") +
+          `<span>@${esc(acc.screen_name || "conta")}</span>`;
+      } else {
+        btn.innerHTML = `<span>Conectar X</span>`;
+      }
+      return;
+    }
     const active = (ytStatus.channels || []).find(c => c.active);
     if (active) {
       btn.innerHTML = (active.thumb ? `<img src="${esc(active.thumb)}" alt="">` : "") +
@@ -1034,9 +1148,12 @@
     const btn = document.getElementById("refresh-btn");
     const original = btn.innerHTML;
     btn.innerHTML = "<span>Atualizando…</span>"; btn.disabled = true;
-    flash("Buscando vídeos novos e sintetizando… pode levar até um minuto.", 60000);
+    const isX = currentSource === "x";
+    flash(isX
+      ? "Buscando posts novos no X e sintetizando… pode levar até um minuto."
+      : "Buscando vídeos novos e sintetizando… pode levar até um minuto.", 60000);
     try {
-      const r = await a.refresh();
+      const r = isX ? await a.refresh_x() : await a.refresh();
       if (r && r.ok) {
         await load();
         flash(`Pronto · ${r.processed || 0} processado(s), ${r.above || 0} acima do limiar` +
@@ -1054,15 +1171,80 @@
     }
   }
 
+  // ============ Adicionar link avulso (como o Aspis Android) ============
+  function openAddLink() {
+    pickerCtx = null;
+    document.getElementById("coll-overlay").classList.add("show");
+    const panel = document.getElementById("coll-panel");
+    panel.innerHTML =
+      `<button class="close" onclick="closeColl()" aria-label="Fechar">×</button>
+       <h2>Adicionar link</h2>
+       <div class="section" style="border:none;padding-top:0">
+         <div class="sub">Cole o link de um vídeo do YouTube ou de um post do X. O Aspis baixa a transcrição, avalia pelos seus objetivos e adiciona ao feed.</div>
+       </div>
+       <div class="section">
+         <div class="key-row">
+           <input class="inp" id="addlink-url" placeholder="https://youtu.be/…   ou   https://x.com/…/status/…">
+           <button class="primary" id="addlink-go" onclick="submitAddLink()">Adicionar</button>
+         </div>
+         <div class="note" id="addlink-note"></div>
+       </div>`;
+    const inp = document.getElementById("addlink-url");
+    if (inp) { inp.focus(); inp.onkeydown = (e) => { if (e.key === "Enter") submitAddLink(); }; }
+  }
+
+  async function submitAddLink() {
+    const a = api(); if (!a) return;
+    const inp = document.getElementById("addlink-url");
+    const note = document.getElementById("addlink-note");
+    const go = document.getElementById("addlink-go");
+    const url = (inp.value || "").trim();
+    if (!url) { inp.focus(); return; }
+    go.disabled = true; inp.disabled = true;
+    note.className = "note"; note.textContent = "Analisando… pode levar alguns segundos.";
+    let r = null;
+    try { r = await a.add_link(url); }
+    catch (e) { r = { ok: false, error: String(e) }; }
+    if (!r || !r.ok) {
+      if (r && r.reauth) {
+        closeColl();
+        flashAction(r.error || "Sua sessão do YouTube expirou.", "Reconectar", reconnectActive);
+        return;
+      }
+      note.className = "note err"; note.textContent = (r && r.error) || "Não foi possível adicionar.";
+      go.disabled = false; inp.disabled = false;
+      return;
+    }
+    // sucesso → vai para a aba certa e tenta revelar o item no feed
+    closeColl();
+    if (r.source !== currentSource) { currentSource = r.source; activeFilter = null; }
+    expandedId = r.video_id;
+    await load();
+    const el = document.querySelector(`.row[data-id="${r.video_id}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (r.already) flash("Esse link já estava no Aspis.");
+    } else if (r.already) {
+      flash("Esse link já estava no Aspis — pode estar lido ou fora do período atual.");
+    } else if (!r.above) {
+      flash("Adicionado, mas ficou abaixo do seu limiar de estrelas (não bateu com seus objetivos).");
+    } else {
+      flash("Adicionado — pode estar fora do período atual. Aumente o período para vê-lo.");
+    }
+  }
+
   let settingsMode = "all";   // "all" (engrenagem) | "account" (Conta)
 
   function renderPanel() {
     const p = document.getElementById("panel");
     if (settingsMode === "account") {
+      // a aba ativa decide qual conta aparece primeiro
+      const sections = currentSource === "x"
+        ? xSectionHtml() + ytSectionHtml()
+        : ytSectionHtml() + xSectionHtml();
       p.innerHTML =
         `<button class="close" onclick="closeSettings()" aria-label="Fechar">×</button>
-         <h2>Conta</h2>` +
-        ytSectionHtml();
+         <h2>Conta</h2>` + sections;
       return;
     }
     // Configurações (engrenagem): preferências de curadoria + app
@@ -1098,9 +1280,8 @@
     if (!tr) return;
     tr.addEventListener("click", async (e) => {
       const rect = tr.getBoundingClientRect();
-      const ratio = (e.clientX - rect.left) / rect.width;
-      const n = Math.max(0, Math.min(5, Math.round(ratio * 5)));
-      minStars = (n === minStars) ? 0 : n;
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      minStars = Math.round(ratio * ALIGN_MAX);
       try { const r = await api().set_min_stars(minStars); } catch (e) {}
       renderPanel(); setTimeout(wireStarsTrack, 0); load();
     });
@@ -1108,17 +1289,12 @@
 
   function starsSectionHtml() {
     const cur = minStars;
-    const pct = cur > 0 ? Math.round(((cur - 0.5) / 5) * 100) : 0;
-    const thumbColor = cur > 0 ? ALIGN_COLORS[cur] : "var(--fg-tertiary)";
     return `<div class="section">
       <div class="sec-title">Alinhamento mínimo</div>
-      <div class="sub">Arraste ou clique no gradiente para definir o nível mínimo de alinhamento exibido. Vermelho = menor, violeta = maior.</div>
+      <div class="sub">Clique num ponto da escala para definir o nível mínimo de alinhamento exibido. Vermelho = menor, azul = maior.</div>
       <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
-        <div class="align-track align-track-settings" id="stars-track" style="height:8px">
-          <div class="align-track-mask" style="width:${pct}%"></div>
-          <div class="align-thumb" style="left:${pct}%;background:${thumbColor};width:16px;height:16px"></div>
-        </div>
-        <span class="thr-val" style="min-width:60px">${cur > 0 ? "≥ " + ALIGN_LABELS[cur] : "todos"}</span>
+        <div class="align-track align-track-settings" id="stars-track" style="height:8px">${alignDotsHtml(cur)}</div>
+        <span class="thr-val" style="min-width:60px">${"≥ " + ALIGN_LABELS[cur]}</span>
       </div>
       <div class="note ok" id="stars-note" style="margin-top:8px"></div>
     </div>`;
@@ -1352,38 +1528,93 @@
     return h;
   }
 
-  function objectivesSectionHtml() {
-    const rows = objDraft.map((o, i) => `
-      <div class="obj">
-        <div class="obj-head">
-          <input class="inp" value="${esc(o.nome || "")}" placeholder="Nome do objetivo"
-                 oninput="objField(${i}, 'nome', this.value)">
-          <select class="peso-sel" onchange="objField(${i}, 'peso', +this.value)" title="Peso (importância)">
-            ${[1,2,3,4,5].map(n => `<option value="${n}" ${n === (o.peso || 3) ? "selected" : ""}>peso ${n}</option>`).join("")}
-          </select>
-          <button class="lnk" onclick="removeObjective(${i})">remover</button>
+  function xSectionHtml() {
+    const s = xStatus;
+    let h = `<div class="section"><div class="sec-title">Conta do X (Twitter)</div>`;
+    if (s.connected && s.account) {
+      const a = s.account;
+      h += `<div class="sub">Conectado. O Aspis lê seu timeline “Seguindo” (ou as contas escolhidas no config).</div>
+        <div class="chans"><div class="chan">
+          ${a.thumb ? `<img src="${esc(a.thumb)}" alt="">` : `<div class="ph"></div>`}
+          <div class="info">
+            <div class="nm">${esc(a.name || a.screen_name || "Conta")}</div>
+            <div class="hd">@${esc(a.screen_name || "")}</div>
+          </div>
+          <button class="lnk" onclick="disconnectX()">desconectar</button>
+        </div></div>`;
+    } else {
+      h += `<div class="sub">Entre com sua conta do X. O app guarda só os <b>cookies de sessão</b> (a senha não é salva).</div>
+        <div class="xform">
+          <input class="inp" id="x-user" placeholder="Usuário do X (sem @) ou e-mail" autocomplete="off">
+          <input class="inp" id="x-email" placeholder="E-mail ou telefone (se o X pedir verificação) — opcional" autocomplete="off">
+          <input class="inp" id="x-pass" type="password" placeholder="Senha" autocomplete="off">
+          <div class="row-actions">
+            <button class="primary" id="x-connect-btn" onclick="connectX()">Conectar X</button>
+          </div>
         </div>
-        <textarea class="field obj-desc" placeholder="Descrição do objetivo."
-                  oninput="objField(${i}, 'descricao', this.value)">${esc(o.descricao || "")}</textarea>
-        <input class="inp obj-q" value="${esc(o.quero || "")}" placeholder="Quero ver: (separe por vírgula)"
-               oninput="objField(${i}, 'quero', this.value)">
-        <input class="inp obj-n" value="${esc(o.nao_quero || "")}" placeholder="Não quero ver: (separe por vírgula)"
-               oninput="objField(${i}, 'nao_quero', this.value)">
+        <div class="help">
+          Sem API oficial: o login usa sua sessão (via <b>twikit</b>). É <b>zona-cinzenta</b>
+          dos termos do X — uso pessoal. Se sua conta tem <b>2FA</b>, o login pode falhar;
+          nesse caso, desative o 2FA temporariamente ou use uma conta secundária.
+        </div>`;
+    }
+    h += `<div class="note" id="x-note"></div></div>`;
+    return h;
+  }
+
+  function pesoDotsHtml(i, peso) {
+    let s = "";
+    for (let n = 1; n <= 5; n++) {
+      s += `<span class="peso-dot ${n <= peso ? "on" : ""}" onclick="setObjPeso(${i}, ${n})"
+              title="importância ${n} de 5" role="button" aria-label="importância ${n}"></span>`;
+    }
+    return s;
+  }
+
+  function setObjPeso(i, n) {
+    if (!objDraft[i]) return;
+    objDraft[i].peso = n;
+    const row = document.getElementById("peso-row-" + i);
+    if (row) row.innerHTML = pesoDotsHtml(i, n);
+  }
+
+  function objectivesSectionHtml() {
+    const cards = objDraft.map((o, i) => `
+      <div class="theme">
+        <div class="theme-head">
+          <input class="theme-title" value="${esc(o.nome || "")}" placeholder="Nome do tema (ex.: Saúde)"
+                 oninput="objField(${i}, 'nome', this.value)">
+          <button class="theme-del" title="Remover tema" aria-label="Remover tema"
+                  onclick="removeObjective(${i})">✕</button>
+        </div>
+        <div class="obj-meta">
+          <span class="obj-meta-lbl">importância</span>
+          <span class="peso-row" id="peso-row-${i}">${pesoDotsHtml(i, o.peso || 3)}</span>
+        </div>
+        <div class="theme-flbl">O que você mais quer saber sobre isso?</div>
+        <textarea class="field theme-int" oninput="objField(${i}, 'interesses', this.value)"
+          placeholder="Escreva com suas palavras — ex.: “Informações acionáveis sobre como perder gordura corporal, com base em ciência; protocolos de sono e treino de força que eu consiga aplicar.”">${esc(o.interesses || "")}</textarea>
+        <details class="theme-avoid"${(o.nao_quero || "").trim() ? " open" : ""}>
+          <summary>evitar (opcional)</summary>
+          <input class="inp" value="${esc(o.nao_quero || "")}"
+                 placeholder="o que NÃO quer ver (separe por vírgula): dietas milagrosas, fitspiration…"
+                 oninput="objField(${i}, 'nao_quero', this.value)">
+        </details>
       </div>`).join("");
     return `<div class="section">
-      <div class="sec-title">Objetivos</div>
-      <div class="sub">A IA julga cada vídeo contra estes objetivos; o peso (1–5, padrão 3) define a importância no ranqueamento. "Quero/Não quero" afinam o que conta como alinhado.</div>
-      ${rows}
+      <div class="sec-title">Temas de interesse</div>
+      <div class="sub">Dê um nome ao tema e descreva, com suas palavras, o que você mais quer saber. O Aspis varre o YouTube e o X e ranqueia vídeos e posts por isso. A importância (1–5) pesa o tema no ranqueamento.</div>
+      ${cards}
       <div class="row-actions">
-        <button class="lnk" onclick="addObjective()">+ adicionar objetivo</button>
-        <button class="primary" onclick="saveObjectives()">Salvar objetivos</button>
+        <button class="lnk" onclick="addObjective()">+ adicionar tema</button>
+        <button class="primary" onclick="saveObjectives()">Salvar temas</button>
       </div>
       <div class="note" id="obj-note"></div>
     </div>`;
   }
 
   function objField(i, k, v) { if (objDraft[i]) objDraft[i][k] = v; }
-  function addObjective() { objDraft.push({ id: "", nome: "", descricao: "", peso: 3, quero: "", nao_quero: "" }); renderPanel(); }
+  function addObjective() { objDraft.push({ id: "", nome: "", interesses: "", peso: 3, nao_quero: "" }); renderPanel(); }
   function removeObjective(i) { objDraft.splice(i, 1); renderPanel(); }
   async function saveObjectives() {
     const a = api();
@@ -1396,7 +1627,7 @@
         objDraft = pilares.map(p => ({ ...p }));
         renderPanel();
         const n2 = document.getElementById("obj-note");
-        if (n2) { n2.className = "note ok"; n2.textContent = "✓ objetivos salvos. Clique ↻ Atualizar para reavaliar os vídeos."; }
+        if (n2) { n2.className = "note ok"; n2.textContent = "✓ temas salvos. Clique ↻ Atualizar para reavaliar (YouTube e X)."; }
         load();
       } else {
         note.className = "note err"; note.textContent = (r && r.error) || "Não foi possível salvar.";
@@ -1472,6 +1703,36 @@
     renderPanel(); renderAcctButton();
   }
 
+  async function connectX() {
+    const a = api();
+    const note = document.getElementById("x-note");
+    const btn = document.getElementById("x-connect-btn");
+    const user = (document.getElementById("x-user") || {}).value || "";
+    const email = (document.getElementById("x-email") || {}).value || "";
+    const pass = (document.getElementById("x-pass") || {}).value || "";
+    if (btn) btn.disabled = true;
+    if (note) { note.className = "note"; note.textContent = "Conectando ao X… (pode levar alguns segundos)"; }
+    try {
+      const r = await a.x_login(user, email, pass);
+      if (r && r.ok) {
+        try { xStatus = await a.x_status(); } catch (e) {}
+        renderPanel(); renderAcctButton(); load();
+      } else {
+        if (note) { note.className = "note err"; note.textContent = (r && r.error) || "Não foi possível conectar ao X."; }
+        if (btn) btn.disabled = false;
+      }
+    } catch (e) {
+      if (note) { note.className = "note err"; note.textContent = String(e); }
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function disconnectX() {
+    const a = api();
+    try { xStatus = await a.x_remove(); } catch (e) { console.error(e); }
+    renderPanel(); renderAcctButton(); load();
+  }
+
   function renderOnboard(list) {
     list.innerHTML = `<div class="onboard">
       Para começar, conecte sua conta do YouTube.<br>
@@ -1480,9 +1741,34 @@
     </div>`;
   }
 
+  function renderXOnboard(list) {
+    list.innerHTML = `<div class="onboard">
+      Para começar, conecte sua conta do X.<br>
+      O Aspis lê seu timeline “Seguindo” (ou as contas que você escolher) e monta a
+      lista ranqueada pelos seus objetivos — sem o feed, sem a indignação.
+      <br><button class="primary" onclick="openAccount()">Conectar X</button>
+    </div>`;
+  }
+
+  function syncTabs() {
+    document.getElementById("tab-youtube").classList.toggle("active", currentSource === "youtube");
+    document.getElementById("tab-x").classList.toggle("active", currentSource === "x");
+  }
+
+  function setSource(src) {
+    if (src !== "youtube" && src !== "x") src = "youtube";
+    if (src === currentSource) return;
+    currentSource = src;
+    expandedId = null;
+    activeFilter = null;   // pilares são compartilhados, mas reinicia o filtro visual
+    syncTabs();
+    load();
+  }
+
   async function load() {
     renderChips();
     renderPeriod();
+    syncTabs();
     const a = api();
     const list = document.getElementById("list");
     if (!a) { list.innerHTML = `<div class="empty">Carregando…</div>`; return; }
@@ -1490,15 +1776,17 @@
     try { const vp = await a.get_view_prefs(); period = vp.period; minStars = vp.min_stars; renderPeriod(); renderChips(); } catch (e) {}
     await refreshYtStatus();
     await refreshPilares();
-    if (!ytStatus.active) {
-      renderOnboard(list);
+
+    const connected = currentSource === "x" ? xStatus.connected : !!ytStatus.active;
+    if (!connected) {
+      (currentSource === "x" ? renderXOnboard : renderOnboard)(list);
       document.getElementById("new-count").textContent = "—";
       document.getElementById("footer").textContent = "";
       return;
     }
 
     let videos = [];
-    try { videos = await a.get_videos(activeFilter, showRead); } catch (e) { console.error(e); }
+    try { videos = await a.get_videos(activeFilter, showRead, currentSource); } catch (e) { console.error(e); }
 
     list.innerHTML = "";
     if (!videos.length) {
@@ -1507,23 +1795,25 @@
     for (const v of videos) {
       const row = document.createElement("div");
       row.className = "row" + (v.read ? " is-read" : "");
+      row.dataset.id = v.video_id;
       row.innerHTML = rowHtml(v);
       list.appendChild(row);
       wireRow(row, v);
     }
 
     // header counts
+    const itemWord = currentSource === "x" ? "post" : "vídeo";
     try {
-      const n = await a.new_count();
+      const n = await a.new_count(currentSource);
       document.getElementById("new-count").textContent =
         `${n} ${n === 1 ? "novo" : "novos"}`;
     } catch (e) {}
     try {
-      const f = await a.filtered_count();
+      const f = await a.filtered_count(null, currentSource);
       let rc = 0;
-      try { rc = await a.read_count(); } catch (e) {}
+      try { rc = await a.read_count(currentSource); } catch (e) {}
       const bits = [];
-      if (f > 0) bits.push(`${f} ${f === 1 ? "vídeo filtrado" : "vídeos filtrados"} por não baterem com seus objetivos`);
+      if (f > 0) bits.push(`${f} ${f === 1 ? itemWord + " filtrado" : itemWord + "s filtrados"} por não baterem com seus objetivos`);
       if (rc > 0) bits.push(`${rc} ${rc === 1 ? "lido" : "lidos"}`);
       document.getElementById("footer").textContent = bits.join(" · ");
     } catch (e) {}

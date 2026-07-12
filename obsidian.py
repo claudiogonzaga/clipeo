@@ -49,7 +49,13 @@ def _note_path(cfg, v):
     return os.path.join(folder, _note_basename(v) + ".md")
 
 
-def _render_note(v):
+def _audio_path(cfg, v):
+    folder = os.path.join(_vault(cfg), SUBFOLDER)
+    _ensure_dir(folder)
+    return os.path.join(folder, _note_basename(v) + ".wav")
+
+
+def _render_note(v, audio_name=None):
     pillar_name = PILLAR_NAMES.get(v["pillar"], "Geral")
     data = (v.get("published_at") or "")[:10] or datetime.now(timezone.utc).strftime("%Y-%m-%d")
     autor = (v.get("channel") or "").replace('"', "'")
@@ -67,6 +73,11 @@ def _render_note(v):
         "",
         f"# {v['neutral_title']}",
         "",
+    ]
+    # nota de áudio: embed do .wav (o Obsidian toca inline)
+    if audio_name:
+        lines += ["## Áudio", f"![[{audio_name}]]", ""]
+    lines += [
         "## Resumo",
         v.get("resumo", "") or "_(sem resumo)_",
         "",
@@ -137,12 +148,28 @@ def save(video_id, cfg=None):
         raise ValueError(f"vídeo {video_id} não está no banco")
 
     path = _note_path(cfg, v)
+    audio = _audio_path(cfg, v)
+    audio_name = os.path.basename(audio) if os.path.exists(audio) else None
     with open(path, "w", encoding="utf-8") as fh:
-        fh.write(_render_note(v))
+        fh.write(_render_note(v, audio_name))
     _update_moc(cfg, v)
     _update_daily_note(cfg, v)
     store.set_flag(video_id, "saved_obsidian", 1)
     return path
+
+
+def save_audio(video_id, wav_bytes, cfg=None):
+    """Grava o .wav da análise ao lado da nota e regrava a nota com o embed
+    (vira uma nota de áudio, tocável no Obsidian). Retorna o caminho do .wav."""
+    cfg = cfg or load()
+    v = store.get_video(video_id)
+    if not v:
+        raise ValueError(f"vídeo {video_id} não está no banco")
+    audio = _audio_path(cfg, v)
+    with open(audio, "wb") as fh:
+        fh.write(wav_bytes)
+    save(video_id, cfg)  # regrava a nota já com o embed do áudio
+    return audio
 
 
 def write_daily_digest(cfg=None):

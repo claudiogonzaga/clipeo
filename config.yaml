@@ -54,6 +54,17 @@ youtube:
   channels_manuais: []               # ex.: ["UCxxxx", "UCyyyy"]
   api_key_env: YOUTUBE_API_KEY       # usado só no modo manual (sem login)
 
+x:
+  # Segunda fonte: o X (Twitter). LOGIN é DENTRO DO APP (aba X → "Conta"): você
+  # informa usuário/e-mail/senha UMA vez; o app guarda só os COOKIES de sessão em
+  # ~/.aspis/x/ (a senha NÃO é salva). Sem API oficial — leitura via sessão.
+  #
+  # accounts: se vazio, lê o seu timeline "Seguindo" (cronológico). Se preencher
+  # com @perfis, acompanha só esses (menos volume, menos ruído).
+  accounts: []                       # ex.: ["naval", "paulg"]
+  max_posts_per_account: 20          # posts novos considerados por fonte/execução
+  min_likes: 0                       # ignora posts abaixo deste nº de curtidas (0 = não filtra)
+
 obsidian:
   vault_path: "~/Obsidian/MeuVault"
   daily_notes_folder: "Daily"
